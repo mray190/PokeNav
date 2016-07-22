@@ -1,8 +1,8 @@
 package net.michael_ray.macrobyte;
 
 import android.os.AsyncTask;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -11,7 +11,6 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.json.JSONArray;
@@ -21,7 +20,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -78,7 +76,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     JSONObject pokemon = array.getJSONObject(i);
                     poke_pos = new LatLng(pokemon.getDouble("lat"), pokemon.getDouble("lon"));
                     MarkerOptions marker = new MarkerOptions().position(poke_pos).title(Integer.toString(pokemon.getInt("id")));
-                    int resID = getResources().getIdentifier("p" + Integer.toString(pokemon.getInt("id")), "drawable", getPackageName());
+                    int resID = getResources().getIdentifier("poke_" + Integer.toString(pokemon.getInt("id")), "drawable", getPackageName());
                     marker.icon(BitmapDescriptorFactory.fromResource(resID));
                     mMap.addMarker(marker);
                 }
