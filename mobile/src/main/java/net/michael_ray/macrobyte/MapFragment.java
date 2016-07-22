@@ -4,9 +4,11 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Camera;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,6 +36,8 @@ import java.util.Calendar;
 
 public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMarkerClickListener {
 
+    private final boolean DEBUG = true;
+
     private GoogleMap mMap;
 
     @Override
@@ -49,13 +53,19 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
         return view;
     }
 
+    @Override
+    public void onViewCreated(View v, Bundle savedInstanceState){
+        super.onViewCreated(v, savedInstanceState);
+        setUpMapIfNeeded();
+    }
+
     private void setUpMapIfNeeded() {
         if (mMap == null) {
             mMap = ((SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.location_map)).getMap();
             mMap.setOnMyLocationButtonClickListener(this);
             mMap.setMyLocationEnabled(true);
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(42.2928234, -83.7160523), 16));
-            mMap.setPadding(0, 120, 0, 0);
+            mMap.setPadding(0, 240, 0, 0);
             mMap.setOnMarkerClickListener(this);
             ((MacroByte)getActivity().getApplication()).map = mMap;
             DownloadTask downloadTask = new DownloadTask();
@@ -63,12 +73,18 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
         }
     }
 
+
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         if (mMap != null) {
-            mMap = null;
             ((MacroByte)getActivity().getApplication()).map = null;
+            Fragment mapFragment = getChildFragmentManager().findFragmentById(R.id.location_map);
+            FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+            ft.remove(mapFragment);
+            ft.commit();
+            mMap = null;
         }
     }
 
@@ -112,7 +128,7 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
 
                     long time = (long)pokemon.getDouble("goaway")*1000;
                     long now_time = System.currentTimeMillis();
-                    if ((time-now_time)>0) {
+                    if ((time-now_time)>0 || DEBUG) {
                         poke_pos = new LatLng(pokemon.getDouble("lat"), pokemon.getDouble("lon"));
                         MarkerOptions markerOptions = new MarkerOptions().position(poke_pos);
                         int resID = getResources().getIdentifier("poke_" + Integer.toString(pokemon.getInt("id")), "drawable", getActivity().getPackageName());
@@ -120,11 +136,13 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
                         markerOptions.snippet(pokemon.toString());
                         Marker marker = mMap.addMarker(markerOptions);
                         ((MacroByte) getActivity().getApplication()).markers.add(marker);
-                        Intent intentAlarm = new Intent(getActivity(), AlarmReceiver.class);
-                        intentAlarm.putExtra("marker_id",((MacroByte) getActivity().getApplication()).markers.size()-1);
-                        AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
-                        alarmManager.set(AlarmManager.RTC_WAKEUP, (long)pokemon.getDouble("goaway"), PendingIntent.getBroadcast(getActivity(), 1,
-                                intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
+                        if (!DEBUG) {
+                            Intent intentAlarm = new Intent(getActivity(), AlarmReceiver.class);
+                            intentAlarm.putExtra("marker_id", ((MacroByte) getActivity().getApplication()).markers.size() - 1);
+                            AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
+                            alarmManager.set(AlarmManager.RTC_WAKEUP, (long) pokemon.getDouble("goaway"), PendingIntent.getBroadcast(getActivity(), 1,
+                                    intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
+                        }
                     }
                 }
             } catch (Exception e) {

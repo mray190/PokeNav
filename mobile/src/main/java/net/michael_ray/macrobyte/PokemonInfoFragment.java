@@ -91,11 +91,10 @@ public class PokemonInfoFragment extends Fragment {
         Location currLocation = new Location(((MacroByte) this.getActivity().getApplication()).myLocation);
         currLocation.setLatitude(mLat);
         currLocation.setLongitude(mLong);
-        mPokemonDistanceText.setText(((MacroByte) this.getActivity().getApplication()).myLocation.distanceTo(currLocation) + " meters away");
+        distance = ((MacroByte) this.getActivity().getApplication()).myLocation.distanceTo(currLocation);
+        mPokemonDistanceText.setText(distance + " meters away");
         //distance = MapUtilities.distance()
         // update from miles to feet
-        distance = distance * 5280;
-        mPokemonDistanceText.setText(distance + " feet away");
         mPokemonTypeText.setText("Type: " + PokemonUtils.getPokemonType(this.getActivity(), mID));
         mPokemonEvoText.setText("Evolves into: " + PokemonUtils.getPokemonEvo(this.getActivity(), mID));
         int resID = getResources().getIdentifier("poke_" + Integer.toString(mID), "drawable", getActivity().getPackageName());
@@ -137,6 +136,9 @@ public class PokemonInfoFragment extends Fragment {
         long currTime = System.currentTimeMillis();
         if (currTime > mRemainingTime) {
             mRemainingTime = 0;
+            if (mTimer != null) {
+                mTimer.cancel();
+            }
         }
         mRemainingTime =  (mRemainingTime - currTime);
     }
@@ -147,5 +149,13 @@ public class PokemonInfoFragment extends Fragment {
     private void updateRemainingTimeText(){
         SimpleDateFormat sdf = new SimpleDateFormat("mm:ss");
         mPokemonTimerText.setText(sdf.format(new Date(mRemainingTime)) + " Remaining");
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (mTimer != null) {
+            mTimer.cancel();
+        }
     }
 }
