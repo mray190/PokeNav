@@ -1,4 +1,4 @@
-package net.michael_ray.macrobyte;
+package net.michael_ray.macrobyte.Utilities;
 
 import android.content.Context;
 import android.util.JsonReader;
