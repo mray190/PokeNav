@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -25,25 +24,9 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
-
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 public class Home extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -212,70 +195,5 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
-    }
-
-    private class DownloadTask extends AsyncTask<String, Void, String> {
-
-        @Override
-        protected String doInBackground(String... params) {
-            try {
-                return downloadContent(params[0]);
-            } catch (IOException e) {
-                return "Unable to retrieve data. URL may be invalid.";
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            try {
-                JSONObject json = new JSONObject(result);
-                JSONArray array = json.getJSONArray("pokemon");
-                LatLng poke_pos = null;
-                for (int i=0; i<array.length(); i++) {
-                    JSONObject pokemon = array.getJSONObject(i);
-                    poke_pos = new LatLng(pokemon.getDouble("lat"), pokemon.getDouble("lon"));
-                    MarkerOptions marker = new MarkerOptions().position(poke_pos).title(Integer.toString(pokemon.getInt("id")));
-                    int resID = getResources().getIdentifier("poke_" + Integer.toString(pokemon.getInt("id")), "drawable", getPackageName());
-                    marker.icon(BitmapDescriptorFactory.fromResource(resID));
-//                    mMap.addMarker(marker);
-                }
-//                if (poke_pos!=null) mMap.moveCamera(CameraUpdateFactory.newLatLng(poke_pos));
-            } catch (Exception e) {
-                Log.e("Pokemon", "Error", e);
-            }
-        }
-
-        private String downloadContent(String myurl) throws IOException {
-            InputStream is = null;
-
-            try {
-                URL url = new URL(myurl);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setReadTimeout(10000 /* milliseconds */);
-                conn.setConnectTimeout(15000 /* milliseconds */);
-                conn.setRequestMethod("GET");
-                conn.setDoInput(true);
-                conn.connect();
-                int response = conn.getResponseCode();
-                is = conn.getInputStream();
-                // Convert the InputStream into a string
-                String contentAsString = convertInputStreamToString(is);
-                return contentAsString;
-            } finally {
-                if (is != null) {
-                    is.close();
-                }
-            }
-        }
-
-        public String convertInputStreamToString(InputStream stream) throws IOException, UnsupportedEncodingException {
-            BufferedReader r = new BufferedReader(new InputStreamReader(stream));
-            StringBuilder total = new StringBuilder();
-            String line;
-            while ((line = r.readLine()) != null) {
-                total.append(line).append('\n');
-            }
-            return total.toString();
-        }
     }
 }
