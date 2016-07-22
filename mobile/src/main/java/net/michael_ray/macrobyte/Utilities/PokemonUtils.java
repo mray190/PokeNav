@@ -18,6 +18,7 @@ import java.io.InputStreamReader;
 public class PokemonUtils {
     private static final String POKEMON_NAME_KEY = "name";
     private static final String POKEMON_TYPE_KEY = "type";
+    private static final String POKEMON_EVO_KEY = "evolveTo";
 
     /**
      * Given a pokedex entry number, returns the name of that pokemon.
@@ -31,21 +32,37 @@ public class PokemonUtils {
             return getPokemonJson(c, pokeId).getString(POKEMON_NAME_KEY);
         } catch (JSONException e) {
             return "Unknown";
-        } catch (Exception e){
+        } catch (Exception e) {
             return "Unknown";
         }
     }
 
     /**
      * Given a pokedex entry number, returns the type of that pokemon
-     * @param c The activity context to enable opening of files
+     *
+     * @param c      The activity context to enable opening of files
      * @param pokeId The pokedex id number of the pokemon
      * @return Returns the type of the pokemon.
      */
-    public static String getPokemonType(Context c, int pokeId){
+    public static String getPokemonType(Context c, int pokeId) {
         try {
             return getPokemonJson(c, pokeId).getString(POKEMON_TYPE_KEY);
-        } catch (JSONException e){
+        } catch (JSONException e) {
+            return "Unknown";
+        }
+    }
+
+    /**
+     * Gets the name of the pokemon the specified pokemon evolvces into
+     * @param c The activity context to enable opening of files
+     * @param pokeId the pokedex id number of the pokemin
+     * @return Returns the name of the evolution pokemon
+     */
+    public static String getPokemonEvo(Context c, int pokeId) {
+        try {
+            int evoNumber = getPokemonJson(c, pokeId).getInt(POKEMON_EVO_KEY);
+            return getPokemonName(c, evoNumber);
+        } catch (JSONException e) {
             return "Unknown";
         }
     }

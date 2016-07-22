@@ -56,6 +56,7 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
             mMap.setMyLocationEnabled(true);
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(42.2928234, -83.7160523), 16));
             mMap.setPadding(0, 120, 0, 0);
+            mMap.setOnMarkerClickListener(this);
             ((MacroByte)getActivity().getApplication()).map = mMap;
             DownloadTask downloadTask = new DownloadTask();
             downloadTask.execute("http://104.237.145.98:1030/pokemon");
@@ -78,7 +79,7 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        MapFragment fragment = new MapFragment();
+        PokemonInfoFragment fragment = new PokemonInfoFragment();
         Bundle data = new Bundle();
         data.putString("pokemon_data", marker.getSnippet());
         fragment.setArguments(data);
