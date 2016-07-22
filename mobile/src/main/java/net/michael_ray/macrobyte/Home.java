@@ -77,6 +77,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         if (!hasLocationPermissions()) requestLocationPermissionsBeforeStart();
         if (!locationSettingsEnabled()) startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
         ((MacroByte) getApplication()).startLocationUpdates();
+        ((MacroByte) getApplication()).fragmentTransaction = fragmentManager.beginTransaction();
         bindService(new Intent(this, BackgroundTasks.class), bgConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -183,7 +184,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
 //        if (id == R.id.live_view) {
 //            MapsFragment fragment = new MapsFragment();

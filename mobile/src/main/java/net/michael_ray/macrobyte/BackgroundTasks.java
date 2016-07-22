@@ -73,6 +73,7 @@ public class BackgroundTasks extends Service implements GoogleApiClient.Connecti
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         locationRequest.setInterval(2000);
+        ((MacroByte)getApplication()).myLocation = myLocation;
         myLocation = LocationServices.FusedLocationApi.getLastLocation(locationClient);
         if (myLocation==null) {
             myLocation = new Location("");
@@ -131,6 +132,7 @@ public class BackgroundTasks extends Service implements GoogleApiClient.Connecti
 
     @Override
     public void onLocationChanged(Location location) {
+        ((MacroByte)getApplication()).myLocation = location;
         this.myLocation = location;
     }
 }

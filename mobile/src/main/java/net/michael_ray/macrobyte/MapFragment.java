@@ -1,5 +1,9 @@
 package net.michael_ray.macrobyte;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -13,6 +17,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.json.JSONArray;
@@ -25,8 +30,9 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Calendar;
 
-public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButtonClickListener {
+public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMarkerClickListener {
 
     private GoogleMap mMap;
 
@@ -37,7 +43,7 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        super.onCreateView(inflater,container,savedInstanceState);
+        super.onCreateView(inflater, container, savedInstanceState);
         View view = inflater.inflate(R.layout.fragment_maps, container, false);
         setUpMapIfNeeded();
         return view;
@@ -70,6 +76,18 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
         return false;
     }
 
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        MapFragment fragment = new MapFragment();
+        Bundle data = new Bundle();
+        data.putString("pokemon_data", marker.getSnippet());
+        fragment.setArguments(data);
+        ((MacroByte) getActivity().getApplication()).fragmentTransaction .replace(R.id.placeholder, fragment);
+        ((MacroByte) getActivity().getApplication()).fragmentTransaction .addToBackStack(null);
+        ((MacroByte) getActivity().getApplication()).fragmentTransaction .commit();
+        return false;
+    }
+
     public class DownloadTask extends AsyncTask<String, Void, String> {
 
         @Override
@@ -83,17 +101,30 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
 
         @Override
         protected void onPostExecute(String result) {
+            ((MacroByte) getActivity().getApplication()).markers.clear();
             try {
                 JSONObject json = new JSONObject(result);
                 JSONArray array = json.getJSONArray("pokemon");
                 LatLng poke_pos = null;
                 for (int i=0; i<array.length(); i++) {
                     JSONObject pokemon = array.getJSONObject(i);
-                    poke_pos = new LatLng(pokemon.getDouble("lat"), pokemon.getDouble("lon"));
-                    MarkerOptions marker = new MarkerOptions().position(poke_pos).title(Integer.toString(pokemon.getInt("id")));
-                    int resID = getResources().getIdentifier("poke_" + Integer.toString(pokemon.getInt("id")), "drawable", getActivity().getPackageName());
-                    marker.icon(BitmapDescriptorFactory.fromResource(resID));
-                    mMap.addMarker(marker);
+
+                    long time = (long)pokemon.getDouble("goaway")*1000;
+                    long now_time = System.currentTimeMillis();
+                    if ((time-now_time)>0) {
+                        poke_pos = new LatLng(pokemon.getDouble("lat"), pokemon.getDouble("lon"));
+                        MarkerOptions markerOptions = new MarkerOptions().position(poke_pos);
+                        int resID = getResources().getIdentifier("poke_" + Integer.toString(pokemon.getInt("id")), "drawable", getActivity().getPackageName());
+                        markerOptions.icon(BitmapDescriptorFactory.fromResource(resID));
+                        markerOptions.snippet(pokemon.toString());
+                        Marker marker = mMap.addMarker(markerOptions);
+                        ((MacroByte) getActivity().getApplication()).markers.add(marker);
+                        Intent intentAlarm = new Intent(getActivity(), AlarmReceiver.class);
+                        intentAlarm.putExtra("marker_id",((MacroByte) getActivity().getApplication()).markers.size()-1);
+                        AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
+                        alarmManager.set(AlarmManager.RTC_WAKEUP, (long)pokemon.getDouble("goaway"), PendingIntent.getBroadcast(getActivity(), 1,
+                                intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
+                    }
                 }
             } catch (Exception e) {
                 Log.e("Pokemon", "Error", e);
