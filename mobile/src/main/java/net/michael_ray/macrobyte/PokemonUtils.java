@@ -31,6 +31,8 @@ public class PokemonUtils {
             return getPokemonJson(c, pokeId).getString(POKEMON_NAME_KEY);
         } catch (JSONException e) {
             return "Unknown";
+        } catch (Exception e){
+            return "Unknown";
         }
     }
 

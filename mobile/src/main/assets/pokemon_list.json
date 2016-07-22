@@ -1291,6 +1291,19 @@
       ],
       "curve": 1.6
    },
+   "120": {
+      "name": "Staryu",
+      "attack": 92,
+      "defense": 65,
+      "type": "water",
+      "moves": [
+         "peck",
+         "horn attack",
+         "waterfall",
+         "megahorn"
+      ],
+      "curve": 1.6
+   },
    "121": {
       "name": "Starmie",
       "attack": 75,
