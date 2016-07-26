@@ -1,12 +1,16 @@
 package net.michael_ray.macrobyte;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -24,9 +28,32 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.Toast;
+
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class Home extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -79,6 +106,108 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         ((MacroByte) getApplication()).startLocationUpdates();
         ((MacroByte) getApplication()).fragmentTransaction = fragmentManager.beginTransaction();
         bindService(new Intent(this, BackgroundTasks.class), bgConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    public void refresh_pokemon(View view) {
+        Location myLoc = ((MacroByte)getApplication()).myLocation;
+        if (myLoc!=null) {
+            DownloadTask downloadTask = new DownloadTask();
+            String lat = Double.toString(myLoc.getLatitude());
+            String lon = Double.toString(myLoc.getLongitude());
+            String alt = Double.toString(myLoc.getAltitude());
+            Button button = (Button)findViewById(R.id.refresh_pokemon);
+            button.setEnabled(false);
+            Toast.makeText(this, "Refreshing Pokemon", Toast.LENGTH_SHORT).show();
+            downloadTask.execute("http://104.237.145.98:1030/pokemon", lat, lon, alt);
+        }
+    }
+
+    public class DownloadTask extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                return downloadContent(params[0], params[1], params[2], params[3]);
+            } catch (IOException e) {
+                return "Unable to retrieve data. URL may be invalid.";
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            ((MacroByte) getApplication()).markers.clear();
+            try {
+                Log.d("Pokemon", result);
+                JSONObject json = new JSONObject(result);
+                JSONArray array = json.getJSONArray("pokemon");
+                LatLng poke_pos = null;
+                for (int i=0; i<array.length(); i++) {
+                    JSONObject pokemon = array.getJSONObject(i);
+                    Log.d("Pokemon", pokemon.toString());
+                    long time = (long)pokemon.getDouble("goaway")*1000;
+                    long now_time = System.currentTimeMillis();
+                    if ((time-now_time)>0) {
+                        poke_pos = new LatLng(pokemon.getDouble("lat"), pokemon.getDouble("lon"));
+                        MarkerOptions markerOptions = new MarkerOptions().position(poke_pos);
+                        int resID = getResources().getIdentifier("poke_" + Integer.toString(pokemon.getInt("id")), "drawable", getPackageName());
+                        markerOptions.icon(BitmapDescriptorFactory.fromResource(resID));
+                        markerOptions.snippet(pokemon.toString());
+                        Marker marker = ((MacroByte) getApplication()).map.addMarker(markerOptions);
+                        ((MacroByte) getApplication()).markers.add(marker);
+                        Intent intentAlarm = new Intent(Home.this, AlarmReceiver.class);
+                        intentAlarm.putExtra("marker_id", ((MacroByte) getApplication()).markers.size() - 1);
+                        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                        alarmManager.set(AlarmManager.RTC_WAKEUP, (long)pokemon.getDouble("goaway"), PendingIntent.getBroadcast(Home.this, 1,
+                                intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("Pokemon", "Error", e);
+            }
+            Button button = (Button)findViewById(R.id.refresh_pokemon);
+            button.setEnabled(true);
+        }
+
+        private String downloadContent(String myurl, String lat, String lon, String alt) throws IOException {
+            InputStream is = null;
+
+            try {
+                URL url = new URL(myurl);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setReadTimeout(10000 /* milliseconds */);
+                conn.setConnectTimeout(15000 /* milliseconds */);
+                conn.setRequestMethod("POST");
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
+
+                String out_query = "lat=" + lat + "&lon=" + lon + "&alt=" + alt;
+                OutputStream os = conn.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                writer.write(out_query);
+                writer.flush();
+                writer.close();
+                os.close();
+
+                conn.connect();
+                is = conn.getInputStream();
+                String contentAsString = convertInputStreamToString(is);
+                return contentAsString;
+            } finally {
+                if (is != null) {
+                    is.close();
+                }
+            }
+        }
+
+        public String convertInputStreamToString(InputStream stream) throws IOException, UnsupportedEncodingException {
+            BufferedReader r = new BufferedReader(new InputStreamReader(stream));
+            StringBuilder total = new StringBuilder();
+            String line;
+            while ((line = r.readLine()) != null) {
+                total.append(line).append('\n');
+            }
+            return total.toString();
+        }
     }
 
     @Override
