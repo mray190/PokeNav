@@ -8,6 +8,7 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,6 +38,8 @@ import java.net.URL;
 
 public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMarkerClickListener {
 
+    private final boolean DEBUG = true;
+
     private GoogleMap mMap;
 
     @Override
@@ -52,23 +55,36 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
         return view;
     }
 
+    @Override
+    public void onViewCreated(View v, Bundle savedInstanceState){
+        super.onViewCreated(v, savedInstanceState);
+        setUpMapIfNeeded();
+    }
+
     private void setUpMapIfNeeded() {
         if (mMap == null) {
             mMap = ((SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.location_map)).getMap();
             mMap.setOnMyLocationButtonClickListener(this);
             mMap.setMyLocationEnabled(true);
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(42.2928234, -83.7160523), 16));
-            mMap.setPadding(0, 120, 0, 0);
+            mMap.setPadding(0, 240, 0, 0);
+            mMap.setOnMarkerClickListener(this);
             ((MacroByte)getActivity().getApplication()).map = mMap;
         }
     }
+
+
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         if (mMap != null) {
-            mMap = null;
             ((MacroByte)getActivity().getApplication()).map = null;
+            Fragment mapFragment = getChildFragmentManager().findFragmentById(R.id.location_map);
+            FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+            ft.remove(mapFragment);
+            ft.commit();
+            mMap = null;
         }
     }
 
@@ -79,7 +95,7 @@ public class MapFragment extends Fragment implements GoogleMap.OnMyLocationButto
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        MapFragment fragment = new MapFragment();
+        PokemonInfoFragment fragment = new PokemonInfoFragment();
         Bundle data = new Bundle();
         data.putString("pokemon_data", marker.getSnippet());
         fragment.setArguments(data);
